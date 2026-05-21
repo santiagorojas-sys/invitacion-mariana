@@ -15,11 +15,9 @@ const normalize = (v = "") =>
 const findGuest = (input) => {
   const q = normalize(input)
   if (!q) return null
+
   return guests.find((g) =>
-    g.names.some((n) => {
-      const nn = normalize(n)
-      return nn.includes(q) || q.includes(nn)
-    })
+    g.names.some((n) => normalize(n) === q)
   ) || null
 }
 
@@ -697,7 +695,7 @@ function StoryScreen({ guest, onContinue }) {
         }}
       >
         <img
-          src="/foto-nina.jpg"
+          src={`${import.meta.env.BASE_URL}foto-nina.jpg`}
           alt="Mariana de niña"
           style={{
             width: "100%",
@@ -848,7 +846,7 @@ function StoryScreen({ guest, onContinue }) {
         }}
       >
         <img
-          src="/foto-doctora.jpg"
+          src={`${import.meta.env.BASE_URL}foto-doctora.jpg`}
           alt="Mariana doctora"
           style={{
             width: "100%",
@@ -1141,7 +1139,7 @@ const declineLink = `https://wa.me/${WHATSAPP}?text=${declineMsg}`
     }}
   >
     <img
-      src="/foto-invitacion.jpg"
+      src={`${import.meta.env.BASE_URL}foto-invitacion.jpg`}
       alt="Mariana doctora"
       style={{
         width: "100%",
@@ -1381,7 +1379,7 @@ export default function App() {
     >
       {/* Music */}
       <audio ref={audioRef} loop preload="none">
-        <source src="/music.mp3" type="audio/mpeg" />
+        <source src={`${import.meta.env.BASE_URL}music.mp3`} type="audio/mpeg" />
       </audio>
 
       {/* Medical floating icons — always visible */}
