@@ -40,9 +40,14 @@ export const guests = [
     message: "Tu presencia llenaría de luz esta celebración tan especial para mí."
   },
   {
-    names: ["Juan Arboleda", "Juan Ar"],
-    displayName: "Juan Arboleda",
+    names: ["Juan Quintero", "Juan Q", "Juan"],
+    displayName: "Juan Quintero",
     message: "Gracias por ser parte de este sueño que hoy quiero celebrar contigo."
+  },
+  {
+    names: ["Ana", "Kevin"],
+    displayName: "Ana y Kevin",
+    message: "Con mucho cariño, he reservado esta noche también para ustedes. Me haría muy feliz compartir este momento tan especial con ambos."
   },
   {
     names: ["Juliana Rivera", "Juliana"],
