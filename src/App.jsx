@@ -1196,7 +1196,34 @@ export default function App() {
   const [guest, setGuest] = useState(null)
   const [flash, setFlash] = useState(false)
   const audioRef = useRef(null)
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (!audioRef.current) return
 
+    if (document.hidden) {
+      audioRef.current.pause()
+   } else {
+  return
+}
+  }
+
+  const handleBeforeUnload = () => {
+    if (!audioRef.current) return
+    audioRef.current.pause()
+    audioRef.current.currentTime = 0
+  }
+
+  document.addEventListener("visibilitychange", handleVisibilityChange)
+  window.addEventListener("beforeunload", handleBeforeUnload)
+
+  return () => {
+    document.removeEventListener("visibilitychange", handleVisibilityChange)
+    window.removeEventListener("beforeunload", handleBeforeUnload)
+    if (audioRef.current) {
+      audioRef.current.pause()
+    }
+  }
+}, [step])
   const handleAccess = (foundGuest) => {
     setGuest(foundGuest)
 
