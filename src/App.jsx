@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from "react"
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion"
-import { Stethoscope, HeartPulse, Cross, ShieldPlus, Activity } from "lucide-react"
+import { Stethoscope, HeartPulse, Cross, ShieldPlus, Activity, Mail } from "lucide-react"
 import { guests } from "./data/guests"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -82,25 +82,15 @@ const GoldLine = ({ width = 48 }) => (
   />
 )
 
-// ════════════════════════════════════════════════════════════════════════════
-// SCREEN 1 — ACCESS
-// ════════════════════════════════════════════════════════════════════════════
-
 function AccessScreen({ onSuccess }) {
-  const [phase, setPhase] = useState("closed") // closed | opening | open
   const [name, setName] = useState("")
   const [error, setError] = useState(false)
   const [shaking, setShaking] = useState(false)
   const inputRef = useRef(null)
 
-  // After mount, open the envelope automatically
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase("opening"), 900)
-    const t2 = setTimeout(() => {
-      setPhase("open")
-      setTimeout(() => inputRef.current?.focus(), 300)
-    }, 2200)
-    return () => { clearTimeout(t1); clearTimeout(t2) }
+    const t = setTimeout(() => inputRef.current?.focus(), 250)
+    return () => clearTimeout(t)
   }, [])
 
   const attempt = () => {
@@ -119,381 +109,226 @@ function AccessScreen({ onSuccess }) {
       key="access"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.04 }}
-      transition={{ duration: 0.9 }}
+      exit={{ opacity: 0, scale: 1.02 }}
+      transition={{ duration: 0.45 }}
       className="relative min-h-screen flex items-center justify-center px-5 py-16 overflow-hidden"
     >
       <Glow top="-200px" left="-200px" size={560} delay={0} />
       <Glow bottom="-200px" right="-200px" size={480} delay={3} />
 
       <motion.div
-        initial={{ opacity: 0, y: 48, scale: 0.96 }}
+        initial={{ opacity: 0, y: 24, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
         className="relative z-10 w-full max-w-[520px]"
-        style={{ perspective: 1200 }}
       >
+        <motion.div
+          animate={shaking ? { x: [-8, 8, -6, 6, 0] } : {}}
+          transition={{ duration: 0.4 }}
+          style={{
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "2.4rem",
+            background: "rgba(255,255,255,0.05)",
+            backdropFilter: "blur(28px)",
+            WebkitBackdropFilter: "blur(28px)",
+            boxShadow: "0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)",
+            padding: "3rem 2.5rem",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 2,
+              background: "linear-gradient(90deg, transparent, #d4a92a, transparent)",
+            }}
+          />
 
-        {/* ── Sobre cerrado ─────────────────────────────────── */}
-        <AnimatePresence>
-          {phase === "closed" && (
-            <motion.div
-              key="envelope"
-              initial={{ opacity: 0, scale: 0.92 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.88, y: 20 }}
-              transition={{ duration: 0.5 }}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(135deg, rgba(212,169,42,0.04) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)",
+              pointerEvents: "none",
+              borderRadius: "inherit",
+            }}
+          />
+
+          <div className="relative text-center">
+            <div
               style={{
-                position: "relative",
-                width: "100%",
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: "1.5rem",
               }}
             >
-              {/* Envelope body */}
               <div
                 style={{
-                  border: "1px solid rgba(212,169,42,0.25)",
-                  borderRadius: "1.6rem",
-                  background: "rgba(255,255,255,0.04)",
-                  backdropFilter: "blur(20px)",
-                  boxShadow: "0 40px 80px rgba(0,0,0,0.5)",
-                  padding: "3.5rem 2.5rem",
-                  textAlign: "center",
-                  position: "relative",
-                  overflow: "hidden",
+                  width: 52,
+                  height: 52,
+                  border: "1px solid rgba(212,169,42,0.35)",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  background: "rgba(212,169,42,0.06)",
                 }}
               >
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: "linear-gradient(135deg, rgba(212,169,42,0.05), transparent)",
-                  pointerEvents: "none",
-                }} />
-                {/* Envelope lines decoration */}
-                <div style={{
-                  position: "absolute", top: 0, left: 0, right: 0,
-                  height: "45%",
-                  background: "linear-gradient(135deg, transparent 49.5%, rgba(212,169,42,0.08) 49.5%, rgba(212,169,42,0.08) 50.5%, transparent 50.5%)",
-                  pointerEvents: "none",
-                }} />
-                <div style={{
-                  position: "absolute", top: 0, right: 0,
-                  width: "50%", height: "45%",
-                  background: "linear-gradient(225deg, transparent 49.5%, rgba(212,169,42,0.06) 49.5%, rgba(212,169,42,0.06) 50.5%, transparent 50.5%)",
-                  pointerEvents: "none",
-                }} />
-
-                <div style={{ position: "relative", zIndex: 1 }}>
-                  {/* Wax seal */}
-                  <motion.div
-                    animate={{ rotate: [0, 3, -3, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      width: 72,
-                      height: 72,
-                      borderRadius: "50%",
-                      background: "radial-gradient(circle, #d4a92a, #8a5e10)",
-                      boxShadow: "0 0 0 3px rgba(212,169,42,0.2), 0 8px 24px rgba(0,0,0,0.5)",
-                      marginBottom: "2rem",
-                    }}
-                  >
-                    <HeartPulse size={28} color="#1a0e00" />
-                  </motion.div>
-
-                  <p style={{
-                    letterSpacing: "0.35em", fontSize: "0.6rem",
-                    color: "#d4a92a", textTransform: "uppercase",
-                    fontFamily: "'DM Sans', sans-serif", marginBottom: "0.8rem",
-                  }}>
-                    Invitación privada
-                  </p>
-                  <p className="font-display" style={{
-                    fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-                    fontWeight: 300, color: "rgba(245,240,232,0.7)",
-                    lineHeight: 1.3,
-                  }}>
-                    Para ti, con cariño.
-                  </p>
-                  <div style={{ margin: "1.5rem auto", width: 48 }}>
-                    <GoldLine width={48} />
-                  </div>
-                  <p style={{
-                    color: "rgba(255,255,255,0.25)", fontSize: "0.8rem",
-                    fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.1em",
-                  }}>
-                    Mariana · Medicina · 2026
-                  </p>
-                </div>
+                <HeartPulse size={20} color="#d4a92a" />
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
 
-        {/* ── Tapa del sobre abriéndose ──────────────────────── */}
-        <AnimatePresence>
-          {phase === "opening" && (
-            <motion.div
-              key="opening"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{ position: "relative" }}
-            >
-              {/* Envelope body */}
-              <div style={{
-                border: "1px solid rgba(212,169,42,0.25)",
-                borderRadius: "1.6rem",
-                background: "rgba(255,255,255,0.04)",
-                backdropFilter: "blur(20px)",
-                boxShadow: "0 40px 80px rgba(0,0,0,0.5)",
-                padding: "3.5rem 2.5rem",
-                textAlign: "center",
-                position: "relative",
-                overflow: "hidden",
-              }}>
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: "linear-gradient(135deg, rgba(212,169,42,0.05), transparent)",
-                  pointerEvents: "none",
-                }} />
-
-                <div style={{ position: "relative", zIndex: 1 }}>
-                  {/* Sello que gira y se eleva */}
-                  <motion.div
-                    animate={{ rotate: 15, y: -12, scale: 1.05 }}
-                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                    style={{
-                      display: "inline-flex", alignItems: "center",
-                      justifyContent: "center", width: 72, height: 72,
-                      borderRadius: "50%",
-                      background: "radial-gradient(circle, #d4a92a, #8a5e10)",
-                      boxShadow: "0 0 0 3px rgba(212,169,42,0.2), 0 8px 24px rgba(0,0,0,0.5)",
-                      marginBottom: "2rem",
-                    }}
-                  >
-                    <HeartPulse size={28} color="#1a0e00" />
-                  </motion.div>
-
-                  {/* Tapa abriéndose — triángulo con rotateX */}
-                  <motion.div
-                    initial={{ scaleY: 1, originY: "0%" }}
-                    animate={{ rotateX: -160, originY: "0%", opacity: 0.4 }}
-                    transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                    style={{
-                      position: "absolute",
-                      top: 0, left: 0, right: 0,
-                      height: "45%",
-                      background: "linear-gradient(180deg, rgba(212,169,42,0.12), rgba(212,169,42,0.04))",
-                      borderRadius: "1.6rem 1.6rem 0 0",
-                      transformOrigin: "top center",
-                    }}
-                  />
-
-                  <motion.p
-                    animate={{ opacity: [0.25, 0.5, 0.25] }}
-                    transition={{ duration: 1, repeat: Infinity }}
-                    className="font-display"
-                    style={{
-                      fontSize: "clamp(1.6rem, 4vw, 2.2rem)",
-                      fontWeight: 300, color: "rgba(245,240,232,0.6)", lineHeight: 1.3,
-                    }}
-                  >
-                    Abriendo tu invitación…
-                  </motion.p>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* ── Tarjeta abierta con el formulario ─────────────── */}
-        <AnimatePresence>
-          {phase === "open" && (
-            <motion.div
-              key="card-open"
-              initial={{ opacity: 0, y: -24, scaleY: 0.92 }}
-              animate={{ opacity: 1, y: 0, scaleY: 1 }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            >
-              {/* Card */}
-              <motion.div
-                animate={shaking ? { x: [-8, 8, -6, 6, 0] } : {}}
-                transition={{ duration: 0.4 }}
-                style={{
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "2.4rem",
-                  background: "rgba(255,255,255,0.05)",
-                  backdropFilter: "blur(28px)",
-                  WebkitBackdropFilter: "blur(28px)",
-                  boxShadow: "0 40px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07)",
-                  padding: "3rem 2.5rem",
-                  position: "relative",
-                  overflow: "hidden",
-                }}
-              >
-                {/* Top gold bar */}
-                <div style={{
-                  position: "absolute", top: 0, left: 0, right: 0, height: 2,
-                  background: "linear-gradient(90deg, transparent, #d4a92a, transparent)",
-                }} />
-
-                <div style={{
-                  position: "absolute", inset: 0,
-                  background: "linear-gradient(135deg, rgba(212,169,42,0.04) 0%, transparent 50%, rgba(255,255,255,0.02) 100%)",
-                  pointerEvents: "none", borderRadius: "inherit",
-                }} />
-
-                <div className="relative text-center">
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                    style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}
-                  >
-                    <div style={{
-                      width: 52, height: 52,
-                      border: "1px solid rgba(212,169,42,0.35)",
-                      borderRadius: "50%",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      background: "rgba(212,169,42,0.06)",
-                    }}>
-                      <HeartPulse size={20} color="#d4a92a" />
-                    </div>
-                  </motion.div>
-
-                  <motion.p
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.5 }}
-                    style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      letterSpacing: "0.35em", fontSize: "0.62rem",
-                      color: "#d4a92a", textTransform: "uppercase", marginBottom: "1.2rem",
-                    }}
-                  >
-                    Invitación privada
-                  </motion.p>
-
-                  <motion.h1
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.28, duration: 0.6 }}
-                    className="font-display"
-                    style={{
-                      fontSize: "clamp(2.6rem, 6.5vw, 3.8rem)",
-                      fontWeight: 300, lineHeight: 1.08,
-                      letterSpacing: "-0.01em", color: "#f5f0e8", marginBottom: "0.8rem",
-                    }}
-                  >
-                    Una noche
-                    <br />
-                    <em style={{ fontStyle: "italic", color: "#e6c85a" }}>muy especial</em>
-                    <br />
-                    te espera.
-                  </motion.h1>
-
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.38, duration: 0.5 }}
-                    style={{ margin: "1.4rem 0" }}
-                  >
-                    <GoldLine width={56} />
-                  </motion.div>
-
-                  <motion.p
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.45, duration: 0.5 }}
-                    style={{
-                      color: "rgba(255,255,255,0.4)", fontSize: "0.92rem",
-                      lineHeight: 1.75, maxWidth: 340, margin: "0 auto 2rem",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  >
-                    Escribe tu nombre para abrir esta experiencia
-                    creada con cariño para ti.
-                  </motion.p>
-
-                  {/* Input */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.55, duration: 0.5 }}
-                    style={{
-                      border: "1px solid rgba(212,169,42,0.2)",
-                      borderRadius: "1.6rem",
-                      background: "rgba(0,0,0,0.3)",
-                      padding: "6px 6px 6px 20px",
-                      display: "flex", alignItems: "center", gap: 8,
-                    }}
-                  >
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      placeholder="Tu nombre..."
-                      value={name}
-                      onChange={(e) => { setName(e.target.value); setError(false) }}
-                      onKeyDown={(e) => e.key === "Enter" && attempt()}
-                      style={{
-                        flex: 1, background: "transparent", border: "none",
-                        outline: "none", color: "#f5f0e8", fontSize: "1rem",
-                        fontFamily: "'DM Sans', sans-serif", padding: "12px 0",
-                      }}
-                    />
-                    <motion.button
-                      onClick={attempt}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      style={{
-                        background: "linear-gradient(135deg, #d4a92a, #b8891c)",
-                        border: "none", borderRadius: "1.2rem",
-                        color: "#1a0e00", fontFamily: "'DM Sans', sans-serif",
-                        fontWeight: 500, fontSize: "0.9rem",
-                        padding: "13px 24px", cursor: "pointer",
-                        whiteSpace: "nowrap", letterSpacing: "0.02em",
-                      }}
-                    >
-                      Entrar
-                    </motion.button>
-                  </motion.div>
-
-                  <AnimatePresence>
-                    {error && (
-                      <motion.p
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0 }}
-                        style={{
-                          color: "rgba(230,180,90,0.7)", fontSize: "0.85rem",
-                          marginTop: "1rem", fontFamily: "'DM Sans', sans-serif",
-                        }}
-                      >
-                        No encontramos ese nombre. Intenta con tu primer apellido.
-                      </motion.p>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Bottom gold bar */}
-                <div style={{
-                  position: "absolute", bottom: 0, left: 0, right: 0, height: 2,
-                  background: "linear-gradient(90deg, transparent, rgba(212,169,42,0.4), transparent)",
-                }} />
-              </motion.div>
-
-              <p style={{
-                textAlign: "center", marginTop: "1.8rem",
-                color: "rgba(255,255,255,0.15)", fontSize: "0.68rem",
-                letterSpacing: "0.2em", textTransform: "uppercase",
+            <p
+              style={{
                 fontFamily: "'DM Sans', sans-serif",
-              }}>
-                Mariana · Medicina · 2026
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                letterSpacing: "0.35em",
+                fontSize: "0.62rem",
+                color: "#d4a92a",
+                textTransform: "uppercase",
+                marginBottom: "1.2rem",
+              }}
+            >
+              Invitación privada
+            </p>
 
+            <h1
+              className="font-display"
+              style={{
+                fontSize: "clamp(2.6rem, 6.5vw, 3.8rem)",
+                fontWeight: 300,
+                lineHeight: 1.08,
+                letterSpacing: "-0.01em",
+                color: "#f5f0e8",
+                marginBottom: "0.8rem",
+              }}
+            >
+              Una noche
+              <br />
+              <em style={{ fontStyle: "italic", color: "#e6c85a" }}>muy especial</em>
+              <br />
+              te espera.
+            </h1>
+
+            <div style={{ margin: "1.4rem 0" }}>
+              <GoldLine width={56} />
+            </div>
+
+            <p
+              style={{
+                color: "rgba(255,255,255,0.4)",
+                fontSize: "0.92rem",
+                lineHeight: 1.75,
+                maxWidth: 340,
+                margin: "0 auto 2rem",
+                fontFamily: "'DM Sans', sans-serif",
+              }}
+            >
+              Escribe tu nombre para abrir esta experiencia creada con cariño para ti.
+            </p>
+
+            <div
+              style={{
+                border: "1px solid rgba(212,169,42,0.2)",
+                borderRadius: "1.6rem",
+                background: "rgba(0,0,0,0.3)",
+                padding: "6px 6px 6px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder="Tu nombre..."
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  setError(false)
+                }}
+                onKeyDown={(e) => e.key === "Enter" && attempt()}
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  color: "#f5f0e8",
+                  fontSize: "1rem",
+                  fontFamily: "'DM Sans', sans-serif",
+                  padding: "12px 0",
+                }}
+              />
+              <motion.button
+                onClick={attempt}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                style={{
+                  background: "linear-gradient(135deg, #d4a92a, #b8891c)",
+                  border: "none",
+                  borderRadius: "1.2rem",
+                  color: "#1a0e00",
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontWeight: 500,
+                  fontSize: "0.9rem",
+                  padding: "13px 24px",
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                  letterSpacing: "0.02em",
+                }}
+              >
+                Entrar
+              </motion.button>
+            </div>
+
+            <AnimatePresence>
+              {error && (
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    color: "rgba(230,180,90,0.7)",
+                    fontSize: "0.85rem",
+                    marginTop: "1rem",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  No encontramos ese nombre. Intenta con tu primer apellido.
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 2,
+              background: "linear-gradient(90deg, transparent, rgba(212,169,42,0.4), transparent)",
+            }}
+          />
+        </motion.div>
+
+        <p
+          style={{
+            textAlign: "center",
+            marginTop: "1.8rem",
+            color: "rgba(255,255,255,0.15)",
+            fontSize: "0.68rem",
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
+          Dra. Mariana · Medicina · 2026
+        </p>
       </motion.div>
     </motion.div>
   )
@@ -818,7 +653,7 @@ function StoryScreen({ guest, onContinue }) {
           fontFamily: "'DM Sans', sans-serif",
         }}
       >
-        — Mariana
+        — Dra Mariana
       </p>
     </div>
   </FadeInView>
@@ -930,14 +765,16 @@ function StoryScreen({ guest, onContinue }) {
 function InviteScreen({ guest }) {
   const displayName = guest.displayName || guest.names[0]
 const isPairInvite = displayName.includes(" y ")
-
+const inviteValidityText = isPairInvite
+  ? "Esta invitación es válida para dos personas."
+  : "Esta invitación es válida para una persona."
 const confirmText = isPairInvite
-  ? `Hola Mariana, somos ${displayName}. Sí, ahí estaremos acompañándote en esta cena tan especial para celebrar tu logro.`
-  : `Hola Mariana, soy ${displayName}. Sí, ahí estaré acompañándote en esta cena tan especial para celebrar tu logro.`
+  ? `Hola Dra Mariana, somos ${displayName}. Sí, ahí estaremos acompañándote en esta cena tan especial para celebrar tu logro.`
+  : `Hola Dra Mariana, soy ${displayName}. Sí, ahí estaré acompañándote en esta cena tan especial para celebrar tu logro.`
 
 const declineText = isPairInvite
-  ? `Hola Mariana, somos ${displayName}. Muchas gracias por tu invitación. En esta ocasión no podremos acompañarte en la cena de celebración.`
-  : `Hola Mariana, soy ${displayName}. Muchas gracias por tu invitación. En esta ocasión no podré acompañarte en la cena de celebración.`
+  ? `Hola Dra Mariana, somos ${displayName}. Muchas gracias por tu invitación. En esta ocasión no podremos acompañarte en la cena de celebración.`
+  : `Hola Dra Mariana, soy ${displayName}. Muchas gracias por tu invitación. En esta ocasión no podré acompañarte en la cena de celebración.`
 
 const confirmMsg = encodeURIComponent(confirmText)
 const declineMsg = encodeURIComponent(declineText)
@@ -945,11 +782,30 @@ const declineMsg = encodeURIComponent(declineText)
 const confirmLink = `https://wa.me/${WHATSAPP}?text=${confirmMsg}`
 const declineLink = `https://wa.me/${WHATSAPP}?text=${declineMsg}`
 
-  const details = [
-    { label: "Fecha",  value: "Viernes 19 de junio" },
-    { label: "Hora",   value: "7:00 PM" },
-    { label: "Lugar",  value: "Rilette, al frente del Batallón" },
-  ]
+const details = [
+  { label: "Fecha", value: "Viernes 19 de junio" },
+  { label: "Hora", value: "7:00 PM" },
+  { label: "Lugar", value: "Rilette, al frente del Batallón" },
+  {
+    label: "Lluvia de sobres",
+    value: (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "0.55rem",
+          flexWrap: "wrap",
+        }}
+      >
+        <Mail size={18} strokeWidth={1.8} color="#d4a92a" />
+      </span>
+    ),
+  },
+  {
+    label: "Validez",
+    value: inviteValidityText,
+  },
+]
 
   return (
     <motion.div
@@ -967,8 +823,7 @@ const declineLink = `https://wa.me/${WHATSAPP}?text=${declineMsg}`
         position: "relative",
       }}
     >
-      <Glow top="-20%" left="-15%" size={600} delay={0} />
-      <Glow bottom="-20%" right="-15%" size={500} delay={5} />
+ 
 
       <div
         style={{
@@ -1022,9 +877,9 @@ const declineLink = `https://wa.me/${WHATSAPP}?text=${declineMsg}`
             border: "1px solid rgba(255,255,255,0.07)",
             borderRadius: "2.4rem",
             background: "rgba(255,255,255,0.04)",
-            backdropFilter: "blur(32px)",
-            WebkitBackdropFilter: "blur(32px)",
-            boxShadow: "0 60px 120px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06)",
+            backdropFilter: "blur(16px)",
+WebkitBackdropFilter: "blur(16px)",
+boxShadow: "0 24px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
             overflow: "hidden",
             position: "relative",
           }}
@@ -1124,7 +979,7 @@ const declineLink = `https://wa.me/${WHATSAPP}?text=${declineMsg}`
       inset: "-18px",
       background: "radial-gradient(circle, rgba(212,169,42,0.12), transparent 72%)",
       borderRadius: "50%",
-      filter: "blur(28px)",
+      filter: "blur(14px)"
     }}
   />
   <div
@@ -1134,7 +989,7 @@ const declineLink = `https://wa.me/${WHATSAPP}?text=${declineMsg}`
       borderRadius: "1.8rem",
       background: "rgba(255,255,255,0.03)",
       padding: "10px",
-      backdropFilter: "blur(12px)",
+      backdropFilter: "blur(6px)",
       overflow: "hidden",
     }}
   >
@@ -1247,7 +1102,7 @@ Me haría muy feliz contar con tu presencia."
                   fontFamily: "'DM Sans', sans-serif",
                 }}
               >
-                — Mariana
+                — Dra Mariana
               </p>
             </motion.div>
 
@@ -1342,18 +1197,14 @@ export default function App() {
   const [flash, setFlash] = useState(false)
   const audioRef = useRef(null)
 
-  const handleAccess = async (foundGuest) => {
+  const handleAccess = (foundGuest) => {
     setGuest(foundGuest)
 
-    // Try to play music
-    try {
-      if (audioRef.current) {
-        audioRef.current.volume = 0.45
-        await audioRef.current.play()
-      }
-    } catch (_) {}
+    if (audioRef.current) {
+      audioRef.current.volume = 0.45
+      audioRef.current.play().catch(() => {})
+    }
 
-    // Flash transition
     setFlash(true)
     setTimeout(() => {
       setFlash(false)
@@ -1362,10 +1213,10 @@ export default function App() {
     }, 700)
   }
 
-  const handleContinue = () => {
-    setStep("invite")
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
+const handleContinue = () => {
+  setStep("invite")
+  window.scrollTo({ top: 0, behavior: "instant" })
+}
 
   return (
     <div
@@ -1377,15 +1228,12 @@ export default function App() {
         overflowX: "hidden",
       }}
     >
-      {/* Music */}
-      <audio ref={audioRef} loop preload="none">
+      <audio ref={audioRef} loop preload="metadata">
         <source src={`${import.meta.env.BASE_URL}music.mp3`} type="audio/mpeg" />
       </audio>
 
-      {/* Medical floating icons — always visible */}
       <MedIcons />
 
-      {/* Transition overlay — suave disolución oscura */}
       <AnimatePresence>
         {flash && (
           <motion.div
@@ -1404,7 +1252,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Screens */}
       <AnimatePresence mode="wait">
         {step === "access" && (
           <AccessScreen key="access" onSuccess={handleAccess} />
