@@ -187,7 +187,6 @@ const S = {
 // ════════════════════════════════════════════════════════════════════════════
 // ADMIN PANEL
 // ════════════════════════════════════════════════════════════════════════════
-
 function AdminPanel({ onLogout }) {
   const [guests, setGuests] = useState([])
   const [loading, setLoading] = useState(true)
@@ -195,42 +194,68 @@ function AdminPanel({ onLogout }) {
   const [editing, setEditing] = useState(null)
   const [saving, setSaving] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
-  const [form, setForm] = useState({ names: "", display_name: "", message: "" })
+  const [form, setForm] = useState({
+    names: "",
+    display_name: "",
+    message: "",
+    rsvp_status: "pendiente",
+  })
 
   const fetchGuests = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase.from("guests").select("*").order("created_at", { ascending: true })
+    const { data } = await supabase
+      .from("guests")
+      .select("*")
+      .order("created_at", { ascending: true })
+
     setGuests(data || [])
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchGuests() }, [fetchGuests])
+  useEffect(() => {
+    fetchGuests()
+  }, [fetchGuests])
 
   const openNew = () => {
     setEditing(null)
-    setForm({ names: "", display_name: "", message: "" })
+    setForm({
+      names: "",
+      display_name: "",
+      message: "",
+      rsvp_status: "pendiente",
+    })
     setShowForm(true)
   }
 
   const openEdit = (g) => {
     setEditing(g.id)
-    setForm({ names: g.names.join(", "), display_name: g.display_name, message: g.message })
+    setForm({
+      names: g.names.join(", "),
+      display_name: g.display_name,
+      message: g.message,
+      rsvp_status: g.rsvp_status || "pendiente",
+    })
     setShowForm(true)
   }
 
   const handleSave = async () => {
     if (!form.display_name.trim() || !form.names.trim()) return
+
     setSaving(true)
+
     const payload = {
-      names: form.names.split(",").map(n => n.trim()).filter(Boolean),
+      names: form.names.split(",").map((n) => n.trim()).filter(Boolean),
       display_name: form.display_name.trim(),
       message: form.message.trim(),
+      rsvp_status: form.rsvp_status || "pendiente",
     }
+
     if (editing) {
       await supabase.from("guests").update(payload).eq("id", editing)
     } else {
       await supabase.from("guests").insert(payload)
     }
+
     setSaving(false)
     setShowForm(false)
     fetchGuests()
@@ -244,34 +269,67 @@ function AdminPanel({ onLogout }) {
     fetchGuests()
   }
 
+  const confirmedCount = guests.filter((g) => g.rsvp_status === "confirmado").length
+  const declinedCount = guests.filter((g) => g.rsvp_status === "no_asiste").length
+  const pendingCount = guests.filter((g) => (g.rsvp_status || "pendiente") === "pendiente").length
+
   return (
-    <div style={{
-      minHeight: "100vh", padding: "2rem 1.5rem",
-      maxWidth: 860, margin: "0 auto",
-    }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2.5rem" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        padding: "2rem 1.5rem",
+        maxWidth: 860,
+        margin: "0 auto",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: "2.5rem",
+          gap: "1rem",
+          flexWrap: "wrap",
+        }}
+      >
         <div>
           <p style={S.overline}>Panel de administración</p>
-          <h1 className="font-display" style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 300, color: "#f5f0e8" }}>
+          <h1
+            className="font-display"
+            style={{
+              fontSize: "clamp(1.8rem, 4vw, 2.8rem)",
+              fontWeight: 300,
+              color: "#f5f0e8",
+            }}
+          >
             Invitados
           </h1>
         </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
+
+        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           <motion.button
             onClick={openNew}
-            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             style={{ ...S.goldBtn, padding: "0.75rem 1.4rem", fontSize: "0.85rem" }}
           >
             <Plus size={16} /> Nuevo invitado
           </motion.button>
+
           <button
             onClick={onLogout}
             style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1.2rem",
-              color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans', sans-serif",
-              fontSize: "0.85rem", padding: "0.75rem 1.2rem", background: "none", cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: "1.2rem",
+              color: "rgba(255,255,255,0.4)",
+              fontFamily: "'DM Sans', sans-serif",
+              fontSize: "0.85rem",
+              padding: "0.75rem 1.2rem",
+              background: "none",
+              cursor: "pointer",
             }}
           >
             <LogOut size={14} /> Salir
@@ -281,8 +339,77 @@ function AdminPanel({ onLogout }) {
 
       <GoldLine width={80} />
 
-      {/* Lista */}
-      <div style={{ marginTop: "2rem" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          gap: "0.75rem",
+          marginTop: "2rem",
+          marginBottom: "1.25rem",
+        }}
+      >
+        <div
+          style={{
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "1rem",
+            padding: "1rem",
+            background: "rgba(255,255,255,0.03)",
+          }}
+        >
+          <p style={S.label}>Confirmados</p>
+          <p
+            style={{
+              color: "#f5f0e8",
+              fontSize: "1.5rem",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            {confirmedCount}
+          </p>
+        </div>
+
+        <div
+          style={{
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "1rem",
+            padding: "1rem",
+            background: "rgba(255,255,255,0.03)",
+          }}
+        >
+          <p style={S.label}>No asisten</p>
+          <p
+            style={{
+              color: "#f5f0e8",
+              fontSize: "1.5rem",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            {declinedCount}
+          </p>
+        </div>
+
+        <div
+          style={{
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: "1rem",
+            padding: "1rem",
+            background: "rgba(255,255,255,0.03)",
+          }}
+        >
+          <p style={S.label}>Pendientes</p>
+          <p
+            style={{
+              color: "#f5f0e8",
+              fontSize: "1.5rem",
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            {pendingCount}
+          </p>
+        </div>
+      </div>
+
+      <div style={{ marginTop: "1rem" }}>
         {loading ? (
           <p style={{ ...S.muted, textAlign: "center", padding: "3rem 0" }}>Cargando invitados…</p>
         ) : guests.length === 0 ? (
@@ -299,42 +426,111 @@ function AdminPanel({ onLogout }) {
                   borderRadius: "1.2rem",
                   background: "rgba(255,255,255,0.03)",
                   padding: "1.2rem 1.5rem",
-                  display: "flex", alignItems: "center", gap: "1rem",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1rem",
                 }}
               >
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: "#f5f0e8", fontFamily: "'DM Sans', sans-serif", fontWeight: 500, marginBottom: "0.2rem" }}>
+                  <p
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "0.28rem 0.65rem",
+                      borderRadius: "999px",
+                      fontSize: "0.72rem",
+                      fontFamily: "'DM Sans', sans-serif",
+                      marginBottom: "0.55rem",
+                      background:
+                        g.rsvp_status === "confirmado"
+                          ? "rgba(80, 200, 120, 0.12)"
+                          : g.rsvp_status === "no_asiste"
+                          ? "rgba(255, 100, 100, 0.12)"
+                          : "rgba(212,169,42,0.10)",
+                      color:
+                        g.rsvp_status === "confirmado"
+                          ? "rgb(110, 220, 145)"
+                          : g.rsvp_status === "no_asiste"
+                          ? "rgb(255, 140, 140)"
+                          : "#d4a92a",
+                    }}
+                  >
+                    {g.rsvp_status === "confirmado"
+                      ? "Confirmado"
+                      : g.rsvp_status === "no_asiste"
+                      ? "No asiste"
+                      : "Pendiente"}
+                  </p>
+
+                  <p
+                    style={{
+                      color: "#f5f0e8",
+                      fontFamily: "'DM Sans', sans-serif",
+                      fontWeight: 500,
+                      marginBottom: "0.2rem",
+                    }}
+                  >
                     {g.display_name}
                   </p>
-                  <p style={{ color: "rgba(212,169,42,0.7)", fontSize: "0.75rem", fontFamily: "'DM Sans', sans-serif", marginBottom: "0.3rem" }}>
+
+                  <p
+                    style={{
+                      color: "rgba(212,169,42,0.7)",
+                      fontSize: "0.75rem",
+                      fontFamily: "'DM Sans', sans-serif",
+                      marginBottom: "0.3rem",
+                    }}
+                  >
                     Nombres: {g.names.join(", ")}
                   </p>
-                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.8rem", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+
+                  <p
+                    style={{
+                      color: "rgba(255,255,255,0.35)",
+                      fontSize: "0.8rem",
+                      fontFamily: "'DM Sans', sans-serif",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {g.message}
                   </p>
                 </div>
+
                 <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
                   <button
                     onClick={() => openEdit(g)}
                     style={{
-                      width: 36, height: 36, borderRadius: "0.6rem",
+                      width: 36,
+                      height: 36,
+                      borderRadius: "0.6rem",
                       border: "1px solid rgba(212,169,42,0.25)",
                       background: "rgba(212,169,42,0.06)",
-                      color: "#d4a92a", cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#d4a92a",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
                     <Pencil size={14} />
                   </button>
+
                   <button
                     onClick={() => handleDelete(g.id)}
                     disabled={deletingId === g.id}
                     style={{
-                      width: 36, height: 36, borderRadius: "0.6rem",
+                      width: 36,
+                      height: 36,
+                      borderRadius: "0.6rem",
                       border: "1px solid rgba(255,80,80,0.2)",
                       background: "rgba(255,80,80,0.05)",
-                      color: "rgba(255,100,100,0.7)", cursor: "pointer",
-                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "rgba(255,100,100,0.7)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
                     }}
                   >
                     <Trash2 size={14} />
@@ -346,7 +542,6 @@ function AdminPanel({ onLogout }) {
         )}
       </div>
 
-      {/* Modal formulario */}
       <AnimatePresence>
         {showForm && (
           <motion.div
@@ -354,9 +549,15 @@ function AdminPanel({ onLogout }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             style={{
-              position: "fixed", inset: 0, zIndex: 9999,
-              background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)",
-              display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem",
+              position: "fixed",
+              inset: 0,
+              zIndex: 9999,
+              background: "rgba(0,0,0,0.75)",
+              backdropFilter: "blur(8px)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "1.5rem",
             }}
           >
             <motion.div
@@ -365,16 +566,37 @@ function AdminPanel({ onLogout }) {
               exit={{ opacity: 0, y: 16 }}
               style={{
                 ...S.card,
-                width: "100%", maxWidth: 520,
+                width: "100%",
+                maxWidth: 520,
                 padding: "2rem",
               }}
             >
               <div style={S.goldBarTop} />
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
-                <h2 className="font-display" style={{ fontSize: "1.6rem", fontWeight: 300, color: "#f5f0e8" }}>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: "1.5rem",
+                }}
+              >
+                <h2
+                  className="font-display"
+                  style={{ fontSize: "1.6rem", fontWeight: 300, color: "#f5f0e8" }}
+                >
                   {editing ? "Editar invitado" : "Nuevo invitado"}
                 </h2>
-                <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+
+                <button
+                  onClick={() => setShowForm(false)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,0.4)",
+                    cursor: "pointer",
+                  }}
+                >
                   <X size={20} />
                 </button>
               </div>
@@ -386,41 +608,69 @@ function AdminPanel({ onLogout }) {
                     style={S.input}
                     placeholder="Ej: Ana y Kevin"
                     value={form.display_name}
-                    onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, display_name: e.target.value }))}
                   />
                 </div>
+
                 <div>
                   <label style={S.label}>Nombres de búsqueda (separados por coma)</label>
                   <input
                     style={S.input}
                     placeholder="Ej: Ana, Kevin, Ana García"
                     value={form.names}
-                    onChange={e => setForm(f => ({ ...f, names: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, names: e.target.value }))}
                   />
-                  <p style={{ color: "rgba(255,255,255,0.25)", fontSize: "0.72rem", fontFamily: "'DM Sans', sans-serif", marginTop: "0.4rem" }}>
+                  <p
+                    style={{
+                      color: "rgba(255,255,255,0.25)",
+                      fontSize: "0.72rem",
+                      fontFamily: "'DM Sans', sans-serif",
+                      marginTop: "0.4rem",
+                    }}
+                  >
                     El invitado puede buscar cualquiera de estos nombres.
                   </p>
                 </div>
+
                 <div>
                   <label style={S.label}>Mensaje personalizado</label>
                   <textarea
                     style={{ ...S.input, minHeight: 90, resize: "vertical" }}
                     placeholder="Mensaje de bienvenida para este invitado..."
                     value={form.message}
-                    onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                    onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
                   />
+                </div>
+
+                <div>
+                  <label style={S.label}>Estado RSVP</label>
+                  <select
+                    style={S.input}
+                    value={form.rsvp_status}
+                    onChange={(e) => setForm((f) => ({ ...f, rsvp_status: e.target.value }))}
+                  >
+                    <option value="pendiente">Pendiente</option>
+                    <option value="confirmado">Confirmado</option>
+                    <option value="no_asiste">No asiste</option>
+                  </select>
                 </div>
 
                 <motion.button
                   onClick={handleSave}
                   disabled={saving}
-                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                  style={{ ...S.goldBtn, justifyContent: "center", opacity: saving ? 0.7 : 1 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  style={{
+                    ...S.goldBtn,
+                    justifyContent: "center",
+                    opacity: saving ? 0.7 : 1,
+                  }}
                 >
                   <Check size={16} />
                   {saving ? "Guardando…" : editing ? "Guardar cambios" : "Agregar invitado"}
                 </motion.button>
               </div>
+
               <div style={S.goldBarBottom} />
             </motion.div>
           </motion.div>
@@ -429,7 +679,6 @@ function AdminPanel({ onLogout }) {
     </div>
   )
 }
-
 // ════════════════════════════════════════════════════════════════════════════
 // ADMIN LOGIN
 // ════════════════════════════════════════════════════════════════════════════
