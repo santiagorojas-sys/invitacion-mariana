@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect, useCallback } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Stethoscope, HeartPulse, Cross, ShieldPlus, Activity, Mail } from "lucide-react"
-import { guests } from "./data/guests"
+import { Stethoscope, HeartPulse, Cross, ShieldPlus, Activity, Mail, Plus, Pencil, Trash2, X, Check, LogOut } from "lucide-react"
+import { supabase } from "./supabase"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -12,21 +12,22 @@ const normalize = (v = "") =>
    .replace(/\s+/g, " ")
    .trim()
 
-const findGuest = (input) => {
+const findGuest = (input, guestList) => {
   const q = normalize(input)
   if (!q) return null
-  return guests.find((g) => g.names.some((n) => normalize(n) === q)) || null
+  return guestList.find((g) => g.names.some((n) => normalize(n) === q)) || null
 }
 
 const WHATSAPP = "573172812535"
 const BASE = import.meta.env.BASE_URL
+const ADMIN_PASSWORD = "mariana2026"
 
-// ─── Transiciones reutilizables ──────────────────────────────────────────────
+// ─── Transiciones ────────────────────────────────────────────────────────────
 
 const EASE = [0.22, 1, 0.36, 1]
 const fadeUp = { hidden: { opacity: 0, y: 24 }, show: { opacity: 1, y: 0 } }
 
-// ─── Gold divider ────────────────────────────────────────────────────────────
+// ─── Gold divider ─────────────────────────────────────────────────────────────
 
 const GoldLine = ({ width = 48 }) => (
   <div style={{
@@ -35,7 +36,7 @@ const GoldLine = ({ width = 48 }) => (
   }} />
 )
 
-// ─── Floating medical icons — lazy rendered tras mount ───────────────────────
+// ─── Floating medical icons ───────────────────────────────────────────────────
 
 const MED_ICONS = [
   { Icon: Stethoscope, x: "8%",  y: "12%", size: 28, delay: 0 },
@@ -51,7 +52,6 @@ const MED_ICONS = [
 const MedIcons = () => {
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    // Diferimos el render de iconos de fondo para no bloquear el paint inicial
     const t = setTimeout(() => setMounted(true), 800)
     return () => clearTimeout(t)
   }, [])
@@ -73,7 +73,7 @@ const MedIcons = () => {
   )
 }
 
-// ─── FadeInView ──────────────────────────────────────────────────────────────
+// ─── FadeInView ───────────────────────────────────────────────────────────────
 
 const FadeInView = ({ children, delay = 0 }) => (
   <motion.div
@@ -87,7 +87,7 @@ const FadeInView = ({ children, delay = 0 }) => (
   </motion.div>
 )
 
-// ─── Estilos base reutilizables ──────────────────────────────────────────────
+// ─── Estilos base ─────────────────────────────────────────────────────────────
 
 const S = {
   card: {
@@ -162,13 +162,339 @@ const S = {
     maxHeight: "clamp(260px, 45vw, 520px)",
     display: "block",
   },
+  input: {
+    width: "100%",
+    background: "rgba(0,0,0,0.3)",
+    border: "1px solid rgba(212,169,42,0.2)",
+    borderRadius: "0.8rem",
+    color: "#f5f0e8",
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: "0.9rem",
+    padding: "0.75rem 1rem",
+    outline: "none",
+  },
+  label: {
+    display: "block",
+    color: "#d4a92a",
+    fontSize: "0.65rem",
+    letterSpacing: "0.2em",
+    textTransform: "uppercase",
+    fontFamily: "'DM Sans', sans-serif",
+    marginBottom: "0.4rem",
+  },
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ADMIN PANEL
+// ════════════════════════════════════════════════════════════════════════════
+
+function AdminPanel({ onLogout }) {
+  const [guests, setGuests] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [saving, setSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
+  const [form, setForm] = useState({ names: "", display_name: "", message: "" })
+
+  const fetchGuests = useCallback(async () => {
+    setLoading(true)
+    const { data } = await supabase.from("guests").select("*").order("created_at", { ascending: true })
+    setGuests(data || [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { fetchGuests() }, [fetchGuests])
+
+  const openNew = () => {
+    setEditing(null)
+    setForm({ names: "", display_name: "", message: "" })
+    setShowForm(true)
+  }
+
+  const openEdit = (g) => {
+    setEditing(g.id)
+    setForm({ names: g.names.join(", "), display_name: g.display_name, message: g.message })
+    setShowForm(true)
+  }
+
+  const handleSave = async () => {
+    if (!form.display_name.trim() || !form.names.trim()) return
+    setSaving(true)
+    const payload = {
+      names: form.names.split(",").map(n => n.trim()).filter(Boolean),
+      display_name: form.display_name.trim(),
+      message: form.message.trim(),
+    }
+    if (editing) {
+      await supabase.from("guests").update(payload).eq("id", editing)
+    } else {
+      await supabase.from("guests").insert(payload)
+    }
+    setSaving(false)
+    setShowForm(false)
+    fetchGuests()
+  }
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("¿Eliminar este invitado?")) return
+    setDeletingId(id)
+    await supabase.from("guests").delete().eq("id", id)
+    setDeletingId(null)
+    fetchGuests()
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh", padding: "2rem 1.5rem",
+      maxWidth: 860, margin: "0 auto",
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "2.5rem" }}>
+        <div>
+          <p style={S.overline}>Panel de administración</p>
+          <h1 className="font-display" style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", fontWeight: 300, color: "#f5f0e8" }}>
+            Invitados
+          </h1>
+        </div>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          <motion.button
+            onClick={openNew}
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            style={{ ...S.goldBtn, padding: "0.75rem 1.4rem", fontSize: "0.85rem" }}
+          >
+            <Plus size={16} /> Nuevo invitado
+          </motion.button>
+          <button
+            onClick={onLogout}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              border: "1px solid rgba(255,255,255,0.1)", borderRadius: "1.2rem",
+              color: "rgba(255,255,255,0.4)", fontFamily: "'DM Sans', sans-serif",
+              fontSize: "0.85rem", padding: "0.75rem 1.2rem", background: "none", cursor: "pointer",
+            }}
+          >
+            <LogOut size={14} /> Salir
+          </button>
+        </div>
+      </div>
+
+      <GoldLine width={80} />
+
+      {/* Lista */}
+      <div style={{ marginTop: "2rem" }}>
+        {loading ? (
+          <p style={{ ...S.muted, textAlign: "center", padding: "3rem 0" }}>Cargando invitados…</p>
+        ) : guests.length === 0 ? (
+          <p style={{ ...S.muted, textAlign: "center", padding: "3rem 0" }}>No hay invitados aún.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {guests.map((g) => (
+              <motion.div
+                key={g.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: "1.2rem",
+                  background: "rgba(255,255,255,0.03)",
+                  padding: "1.2rem 1.5rem",
+                  display: "flex", alignItems: "center", gap: "1rem",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ color: "#f5f0e8", fontFamily: "'DM Sans', sans-serif", fontWeight: 500, marginBottom: "0.2rem" }}>
+                    {g.display_name}
+                  </p>
+                  <p style={{ color: "rgba(212,169,42,0.7)", fontSize: "0.75rem", fontFamily: "'DM Sans', sans-serif", marginBottom: "0.3rem" }}>
+                    Nombres: {g.names.join(", ")}
+                  </p>
+                  <p style={{ color: "rgba(255,255,255,0.35)", fontSize: "0.8rem", fontFamily: "'DM Sans', sans-serif", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {g.message}
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+                  <button
+                    onClick={() => openEdit(g)}
+                    style={{
+                      width: 36, height: 36, borderRadius: "0.6rem",
+                      border: "1px solid rgba(212,169,42,0.25)",
+                      background: "rgba(212,169,42,0.06)",
+                      color: "#d4a92a", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(g.id)}
+                    disabled={deletingId === g.id}
+                    style={{
+                      width: 36, height: 36, borderRadius: "0.6rem",
+                      border: "1px solid rgba(255,80,80,0.2)",
+                      background: "rgba(255,80,80,0.05)",
+                      color: "rgba(255,100,100,0.7)", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal formulario */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            style={{
+              position: "fixed", inset: 0, zIndex: 9999,
+              background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)",
+              display: "flex", alignItems: "center", justifyContent: "center", padding: "1.5rem",
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16 }}
+              style={{
+                ...S.card,
+                width: "100%", maxWidth: 520,
+                padding: "2rem",
+              }}
+            >
+              <div style={S.goldBarTop} />
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
+                <h2 className="font-display" style={{ fontSize: "1.6rem", fontWeight: 300, color: "#f5f0e8" }}>
+                  {editing ? "Editar invitado" : "Nuevo invitado"}
+                </h2>
+                <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+                <div>
+                  <label style={S.label}>Nombre para mostrar</label>
+                  <input
+                    style={S.input}
+                    placeholder="Ej: Ana y Kevin"
+                    value={form.display_name}
+                    onChange={e => setForm(f => ({ ...f, display_name: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <label style={S.label}>Nombres de búsqueda (separados por coma)</label>
+                  <input
+                    style={S.input}
+                    placeholder="Ej: Ana, Kevin, Ana García"
+                    value={form.names}
+                    onChange={e => setForm(f => ({ ...f, names: e.target.value }))}
+                  />
+                  <p style={{ color: "rgba(255,255,255,0.25)", fontSize: "0.72rem", fontFamily: "'DM Sans', sans-serif", marginTop: "0.4rem" }}>
+                    El invitado puede buscar cualquiera de estos nombres.
+                  </p>
+                </div>
+                <div>
+                  <label style={S.label}>Mensaje personalizado</label>
+                  <textarea
+                    style={{ ...S.input, minHeight: 90, resize: "vertical" }}
+                    placeholder="Mensaje de bienvenida para este invitado..."
+                    value={form.message}
+                    onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                  />
+                </div>
+
+                <motion.button
+                  onClick={handleSave}
+                  disabled={saving}
+                  whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                  style={{ ...S.goldBtn, justifyContent: "center", opacity: saving ? 0.7 : 1 }}
+                >
+                  <Check size={16} />
+                  {saving ? "Guardando…" : editing ? "Guardar cambios" : "Agregar invitado"}
+                </motion.button>
+              </div>
+              <div style={S.goldBarBottom} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ADMIN LOGIN
+// ════════════════════════════════════════════════════════════════════════════
+
+function AdminLogin({ onSuccess }) {
+  const [pass, setPass] = useState("")
+  const [error, setError] = useState(false)
+
+  const attempt = () => {
+    if (pass === ADMIN_PASSWORD) {
+      onSuccess()
+    } else {
+      setError(true)
+      setTimeout(() => setError(false), 2000)
+    }
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center",
+      justifyContent: "center", padding: "2rem",
+    }}>
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{ ...S.card, width: "100%", maxWidth: 400, textAlign: "center" }}
+      >
+        <div style={S.goldBarTop} />
+        <p style={S.overline}>Acceso restringido</p>
+        <h2 className="font-display" style={{ fontSize: "2rem", fontWeight: 300, color: "#f5f0e8", marginBottom: "2rem" }}>
+          Panel Admin
+        </h2>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+          <input
+            type="password"
+            placeholder="Contraseña…"
+            value={pass}
+            onChange={e => setPass(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && attempt()}
+            style={S.input}
+          />
+          <motion.button
+            onClick={attempt}
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+            style={{ ...S.goldBtn, justifyContent: "center" }}
+          >
+            Entrar
+          </motion.button>
+          {error && (
+            <p style={{ color: "rgba(230,100,100,0.8)", fontSize: "0.85rem", fontFamily: "'DM Sans', sans-serif" }}>
+              Contraseña incorrecta.
+            </p>
+          )}
+        </div>
+        <div style={S.goldBarBottom} />
+      </motion.div>
+    </div>
+  )
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // SCREEN 1 — ACCESS
 // ════════════════════════════════════════════════════════════════════════════
 
-function AccessScreen({ onSuccess }) {
+function AccessScreen({ onSuccess, guests }) {
   const [name, setName] = useState("")
   const [error, setError] = useState(false)
   const [shaking, setShaking] = useState(false)
@@ -180,7 +506,7 @@ function AccessScreen({ onSuccess }) {
   }, [])
 
   const attempt = useCallback(() => {
-    const guest = findGuest(name)
+    const guest = findGuest(name, guests)
     if (guest) {
       onSuccess(guest)
     } else {
@@ -188,7 +514,7 @@ function AccessScreen({ onSuccess }) {
       setShaking(true)
       setTimeout(() => setShaking(false), 600)
     }
-  }, [name, onSuccess])
+  }, [name, guests, onSuccess])
 
   return (
     <motion.div
@@ -218,7 +544,6 @@ function AccessScreen({ onSuccess }) {
           }} />
 
           <div className="relative text-center">
-            {/* Icono */}
             <div style={{ display: "flex", justifyContent: "center", marginBottom: "1.5rem" }}>
               <div style={{
                 width: 52, height: 52,
@@ -255,7 +580,6 @@ function AccessScreen({ onSuccess }) {
               Escribe tu nombre para abrir esta experiencia creada con cariño para ti.
             </p>
 
-            {/* Input */}
             <div style={{
               border: "1px solid rgba(212,169,42,0.2)",
               borderRadius: "1.6rem",
@@ -331,7 +655,7 @@ function AccessScreen({ onSuccess }) {
 // ════════════════════════════════════════════════════════════════════════════
 
 function StoryScreen({ guest, onContinue }) {
-  const displayName = guest.displayName || guest.names[0]
+  const displayName = guest.display_name || guest.names[0]
 
   return (
     <motion.div
@@ -342,7 +666,6 @@ function StoryScreen({ guest, onContinue }) {
       transition={{ duration: 0.7 }}
       className="relative"
     >
-      {/* ── Saludo ── */}
       <section style={{
         minHeight: "100vh",
         display: "flex", flexDirection: "column",
@@ -377,7 +700,6 @@ function StoryScreen({ guest, onContinue }) {
         </motion.div>
       </section>
 
-      {/* ── Capítulo 1: La niña ── */}
       <section style={{
         maxWidth: 1100, margin: "0 auto",
         padding: "clamp(3rem, 6vw, 6rem) clamp(1.2rem, 4vw, 2rem)",
@@ -411,18 +733,12 @@ function StoryScreen({ guest, onContinue }) {
 
         <FadeInView delay={0.25}>
           <div style={S.photoFrame}>
-            <img
-              src={`${BASE}foto-nina.jpg`}
-              alt="Mariana de niña"
-              loading="lazy"
-              style={{ ...S.photo, objectPosition: "center 22%" }}
-            />
+            <img src={`${BASE}foto-nina.jpg`} alt="Mariana de niña" loading="lazy" style={{ ...S.photo, objectPosition: "center 22%" }} />
             <div style={S.photoOverlay} />
           </div>
         </FadeInView>
       </section>
 
-      {/* ── Capítulo 2: La doctora ── */}
       <section style={{
         maxWidth: 1100, margin: "0 auto",
         padding: "clamp(3rem, 6vw, 6rem) clamp(1.2rem, 4vw, 2rem)",
@@ -476,18 +792,12 @@ function StoryScreen({ guest, onContinue }) {
 
         <FadeInView delay={0.15}>
           <div style={S.photoFrame}>
-            <img
-              src={`${BASE}foto-doctora.jpg`}
-              alt="Mariana doctora"
-              loading="lazy"
-              style={{ ...S.photo, objectPosition: "center 18%" }}
-            />
+            <img src={`${BASE}foto-doctora.jpg`} alt="Mariana doctora" loading="lazy" style={{ ...S.photo, objectPosition: "center 18%" }} />
             <div style={S.photoOverlay} />
           </div>
         </FadeInView>
       </section>
 
-      {/* ── CTA ── */}
       <section style={{ padding: "4rem 1.5rem 8rem", textAlign: "center", position: "relative" }}>
         <FadeInView>
           <p style={{
@@ -501,12 +811,7 @@ function StoryScreen({ guest, onContinue }) {
             onClick={onContinue}
             whileHover={{ scale: 1.03, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            style={{
-              ...S.goldBtn,
-              boxShadow: "0 0 40px rgba(212,169,42,0.18)",
-              padding: "1.1rem 2.4rem",
-              fontSize: "0.95rem",
-            }}
+            style={{ ...S.goldBtn, boxShadow: "0 0 40px rgba(212,169,42,0.18)", padding: "1.1rem 2.4rem", fontSize: "0.95rem" }}
           >
             <HeartPulse size={18} />
             Ver mi invitación
@@ -522,7 +827,7 @@ function StoryScreen({ guest, onContinue }) {
 // ════════════════════════════════════════════════════════════════════════════
 
 function InviteScreen({ guest }) {
-  const displayName = guest.displayName || guest.names[0]
+  const displayName = guest.display_name || guest.names[0]
   const isPair = displayName.includes(" y ")
 
   const confirmText = isPair
@@ -559,7 +864,6 @@ function InviteScreen({ guest }) {
     >
       <div style={{ position: "relative", zIndex: 10, width: "100%", maxWidth: 720 }}>
 
-        {/* Sello */}
         <motion.div
           initial={{ opacity: 0, scale: 0.7 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -581,7 +885,6 @@ function InviteScreen({ guest }) {
           </p>
         </motion.div>
 
-        {/* Tarjeta principal */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -604,7 +907,6 @@ function InviteScreen({ guest }) {
 
           <div style={{ padding: "clamp(2rem, 5vw, 3.5rem)" }}>
 
-            {/* Nombre */}
             <motion.div
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.45, duration: 0.6 }}
@@ -635,7 +937,6 @@ function InviteScreen({ guest }) {
               }}
             />
 
-            {/* Mensaje personal */}
             <motion.p
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.6 }}
@@ -644,7 +945,6 @@ function InviteScreen({ guest }) {
               {guest.message}
             </motion.p>
 
-            {/* Foto invitación */}
             <motion.div
               initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.78, duration: 0.7 }}
@@ -674,7 +974,6 @@ function InviteScreen({ guest }) {
               </div>
             </motion.div>
 
-            {/* Detalles del evento */}
             <motion.div
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.88, duration: 0.6 }}
@@ -708,7 +1007,6 @@ function InviteScreen({ guest }) {
               ))}
             </motion.div>
 
-            {/* Quote Mariana */}
             <motion.div
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.98, duration: 0.6 }}
@@ -737,7 +1035,6 @@ function InviteScreen({ guest }) {
               </p>
             </motion.div>
 
-            {/* Botones WhatsApp */}
             <motion.div
               initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.08, duration: 0.6 }}
@@ -752,7 +1049,7 @@ function InviteScreen({ guest }) {
                 onMouseLeave={(e) => (e.currentTarget.style.filter = "")}
               >
                 <HeartPulse size={18} />
-                Síii, ahí estaré ✨
+                Síiii, ahí estaré ✨
               </a>
               <a
                 href={declineLink}
@@ -798,25 +1095,43 @@ export default function App() {
   const [step, setStep] = useState("access")
   const [guest, setGuest] = useState(null)
   const [flash, setFlash] = useState(false)
+  const [guestList, setGuestList] = useState([])
+  const [loadingGuests, setLoadingGuests] = useState(true)
+  const [adminAuthed, setAdminAuthed] = useState(false)
   const audioRef = useRef(null)
 
-  // Música: se inicia al hacer login y se pausa solo cuando la pestaña queda oculta.
-  // No depende de `step` para que no se interrumpa al cambiar de pantalla.
+  // Detectar ruta admin
+  const isAdmin = window.location.hash === "#admin"
+
+  // Cargar invitados desde Supabase al montar
   useEffect(() => {
+    supabase
+      .from("guests")
+      .select("*")
+      .then(({ data }) => {
+        setGuestList(data || [])
+        setLoadingGuests(false)
+      })
+  }, [])
+
+  // Audio: pausa al ocultar pestaña
+  useEffect(() => {
+    const pauseAudio = () => audioRef.current?.pause()
     const handleVisibility = () => {
       if (!audioRef.current) return
       if (document.hidden) {
-        audioRef.current.pause()
-      } else {
-        // Solo reanudar si ya había empezado a reproducirse
-        if (audioRef.current.currentTime > 0) {
-          audioRef.current.play().catch(() => {})
-        }
+        pauseAudio()
+      } else if (audioRef.current.currentTime > 0) {
+        audioRef.current.play().catch(() => {})
       }
     }
     document.addEventListener("visibilitychange", handleVisibility)
-    return () => document.removeEventListener("visibilitychange", handleVisibility)
-  }, []) // ← array vacío: este efecto solo se registra una vez
+    window.addEventListener("pagehide", pauseAudio)
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility)
+      window.removeEventListener("pagehide", pauseAudio)
+    }
+  }, [])
 
   const handleAccess = useCallback((foundGuest) => {
     setGuest(foundGuest)
@@ -837,6 +1152,38 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: "instant" })
   }, [])
 
+  // ── Panel admin ──
+  if (isAdmin) {
+    if (!adminAuthed) return (
+      <div style={{ minHeight: "100vh", background: "#030303", color: "#fff" }}>
+        <AdminLogin onSuccess={() => setAdminAuthed(true)} />
+      </div>
+    )
+    return (
+      <div style={{ minHeight: "100vh", background: "#030303", color: "#fff" }}>
+        <AdminPanel onLogout={() => setAdminAuthed(false)} />
+      </div>
+    )
+  }
+
+  // ── Loading inicial ──
+  if (loadingGuests) {
+    return (
+      <div style={{
+        minHeight: "100vh", background: "#030303",
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <motion.div
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.5, repeat: Infinity }}
+          style={{ color: "#d4a92a", fontFamily: "'DM Sans', sans-serif", letterSpacing: "0.2em", fontSize: "0.8rem" }}
+        >
+          CARGANDO…
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div style={{
       minHeight: "100vh", background: "#030303",
@@ -846,10 +1193,8 @@ export default function App() {
         <source src={`${BASE}music.mp3`} type="audio/mpeg" />
       </audio>
 
-      {/* Iconos flotantes — diferidos para no bloquear el primer paint */}
       <MedIcons />
 
-      {/* Flash de transición */}
       <AnimatePresence>
         {flash && (
           <motion.div
@@ -867,8 +1212,8 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence mode="wait">
-        {step === "access" && <AccessScreen key="access" onSuccess={handleAccess} />}
-        {step === "story"  && guest && <StoryScreen key="story"  guest={guest} onContinue={handleContinue} />}
+        {step === "access" && <AccessScreen key="access" onSuccess={handleAccess} guests={guestList} />}
+        {step === "story"  && guest && <StoryScreen key="story" guest={guest} onContinue={handleContinue} />}
         {step === "invite" && guest && <InviteScreen key="invite" guest={guest} />}
       </AnimatePresence>
     </div>
